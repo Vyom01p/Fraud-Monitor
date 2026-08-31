@@ -1,0 +1,14 @@
+# Python
+ml-service/venv/
+ml-service/__pycache__/
+ml-service/*.joblib
+
+# Data (too large / should not be versioned)
+ml-service/data/
+
+# Node
+node_modules/
+*/node_modules/
+
+# Env secrets
+.env
