@@ -1,9 +1,4 @@
 import Transaction from "../models/Transaction.js";
-
-/**
- * Runs all deterministic rules against an incoming transaction.
- * Returns an array of rule-name strings that were triggered.
- */
 export async function runRules(tx, ruleConfig) {
   const triggered = [];
 
