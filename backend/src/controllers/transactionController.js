@@ -2,7 +2,7 @@ import Transaction from "../models/Transaction.js";
 import Alert from "../models/Alert.js";
 import RuleConfig from "../models/RuleConfig.js";
 import { runRules } from "../services/ruleEngine.js";
-import { buildFeatures } from "../services/featureBuilder.js";
+import { buildFeature } from "../services/featureBuilder.js";
 import { getMlScore } from "../services/mlClient.js";
 import { aggregateScore } from "../services/aggregator.js";
 export function createTransactionHandler(io) {
@@ -32,7 +32,7 @@ export function createTransactionHandler(io) {
       //1) Rule engine
       const rulesTriggered = await runRules(draftTx, ruleConfig);
       //2) Feature Building + ML Score
-      const features = await buildFeatures(draftTx);
+      const features = await buildFeature(draftTx);
       const { risk_score, is_anomaly } = await getMlScore(features);
 
       //3) Aggregate into final decision
