@@ -1,0 +1,24 @@
+{
+  "name": "fraud-monitor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vyom01p/Fraud-Monitor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Vyom01p/Fraud-Monitor/issues"
+  },
+  "homepage": "https://github.com/Vyom01p/Fraud-Monitor#readme",
+  "dependencies": {
+    "axios": "^1.20.0"
+  }
+}
