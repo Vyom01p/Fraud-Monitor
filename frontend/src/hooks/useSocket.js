@@ -1,1 +1,1 @@
-export { useSocket } from "../context/SocketContext";
+export { useSocket } from "../context/SocketContext.jsx";
