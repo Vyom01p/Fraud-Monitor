@@ -1,12 +1,12 @@
 import { useSocket } from "../hooks/useSocket";
 
 const statusColor = {
-  APPROVED: "#16a34a", // green
-  REVIEW: "#ca8a04", // yellow
-  BLOCKED: "#dc2626", // red
+  APPROVED: "#16a34a",
+  REVIEW: "#ca8a04",
+  BLOCKED: "#dc2626",
 };
 
-export default function TransactionFeed() {
+export default function TransactionFeed({ onSelect }) {
   const { transactions } = useSocket();
 
   return (
@@ -26,7 +26,11 @@ export default function TransactionFeed() {
         </thead>
         <tbody>
           {transactions.map((tx) => (
-            <tr key={tx._id} style={{ borderBottom: "1px solid #222" }}>
+            <tr
+              key={tx._id}
+              onClick={() => onSelect(tx)}
+              style={{ borderBottom: "1px solid #222", cursor: "pointer" }}
+            >
               <td style={{ padding: "8px" }}>{tx.userId}</td>
               <td style={{ padding: "8px" }}>${tx.amount.toFixed(2)}</td>
               <td style={{ padding: "8px" }}>{tx.finalScore}</td>

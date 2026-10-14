@@ -1,6 +1,6 @@
 import { useSocket } from "../hooks/useSocket";
 
-export default function AlertsPanel() {
+export default function AlertsPanel({ onSelect }) {
   const { alerts } = useSocket();
 
   return (
@@ -14,11 +14,13 @@ export default function AlertsPanel() {
         {alerts.map((tx) => (
           <div
             key={tx._id}
+            onClick={() => onSelect(tx)}
             style={{
               border: `1px solid ${tx.status === "BLOCKED" ? "#dc2626" : "#ca8a04"}`,
               borderRadius: "8px",
               padding: "10px 14px",
               background: tx.status === "BLOCKED" ? "#2a1414" : "#2a2214",
+              cursor: "pointer",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between" }}>
