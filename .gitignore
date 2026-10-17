@@ -6,3 +6,9 @@ ml-service/*.joblib
 ml-service/data/
 backend/.env
 frontend/.env
+__pycache__/
+*.pyc
+venv/
+.env
+node_modules/
+dist/
