@@ -1,20 +1,30 @@
 import axios from "axios";
+import { env } from "../config/env.js";
+import { logger } from "../config/logger.js";
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8000";
+const client = axios.create({
+  baseURL: env.ML_SERVICE_URL,
+  timeout: env.ML_TIMEOUT_MS,
+  headers: env.ML_API_KEY ? { "x-api-key": env.ML_API_KEY } : {},
+});
 
-/**
- * Calls the Python FastAPI microservice with the built features.
- */
+const FALLBACK = { is_anomaly: false, risk_score: 0.5, mlServiceDown: true };
+
 export async function getMlScore(features) {
   try {
-    const response = await axios.post(`${ML_SERVICE_URL}/predict`, features, {
-      timeout: 3000,
-    });
-    return response.data; // { is_anomaly, risk_score, model_type }
+    const { data } = await client.post("/predict", features);
+    if (typeof data?.risk_score !== "number")
+      throw new Error("Malformed ML response");
+    return {
+      is_anomaly: Boolean(data.is_anomaly),
+      risk_score: data.risk_score,
+      mlServiceDown: false,
+    };
   } catch (err) {
-    console.error("ML service call failed:", err.message);
-    // Fail-safe: if ML is down, don't crash the whole pipeline —
-    // fall back to a neutral score and let the rule engine still work.
-    return { is_anomaly: false, risk_score: 0.5, mlServiceDown: true };
+    logger.error(
+      { err: err.message },
+      "ML service call failed, using fallback score",
+    );
+    return FALLBACK;
   }
 }
