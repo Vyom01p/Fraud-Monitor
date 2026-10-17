@@ -75,7 +75,7 @@ export default function RiskDrawer({ tx, onClose }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
+  console.log("RiskDrawer tx:", tx);
   if (!tx) return null;
 
   const rules = tx.rulesTriggered || [];

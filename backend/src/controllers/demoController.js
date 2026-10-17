@@ -12,7 +12,7 @@ const SAMPLES_PATH = path.join(
 let samplesCache;
 
 function loadSamples() {
-  if (samplesCache !== undefined) return samplesCache;
+  if (samplesCache) return samplesCache;
   try {
     samplesCache = JSON.parse(fs.readFileSync(SAMPLES_PATH, "utf8"));
   } catch {
@@ -28,6 +28,7 @@ function httpError(status, message) {
 }
 
 function pick(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return null;
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
@@ -41,53 +42,67 @@ function buildTx(base, sample, amountOverride) {
 }
 
 export function createDemoHandler(io) {
-  return async function handleDemo(req, res) {
-    const { scenario } = req.body;
-    const userId = `demo_${Math.random().toString(36).slice(2, 8)}`;
-    const base = {
-      userId,
-      ip: "203.0.113.7",
-      billingCountry: "US",
-      cardToken: `tok_${userId}`,
-    };
-    const samples = loadSamples();
-    const out = [];
+  return async function handleDemo(req, res, next) {
+    try {
+      const { scenario } = req.body ?? {};
+      const userId = `demo_${Math.random().toString(36).slice(2, 8)}`;
+      const base = {
+        userId,
+        ip: "203.0.113.7",
+        billingCountry: "US",
+        cardToken: `tok_${userId}`,
+      };
+      const samples = loadSamples();
+      const out = [];
 
-    if (scenario === "normal") {
-      const tx = buildTx(base, samples && pick(samples.normal));
-      out.push(await processTransaction(tx, io, "demo"));
-    }
-
-    if (scenario === "ml_fraud") {
-      if (!samples)
-        throw httpError(503, "Demo samples are not installed on this server");
-      const tx = buildTx(base, pick(samples.fraud));
-      out.push(await processTransaction(tx, io, "demo"));
-    }
-
-    if (scenario === "blocked_country") {
-      const config = await getRuleConfig();
-      const country = config.blockedCountries[0];
-      if (!country)
-        throw httpError(
-          400,
-          "No blocked countries configured. Add one in the Rules tab.",
-        );
-      const tx = buildTx(
-        { ...base, billingCountry: country },
-        samples && pick(samples.normal),
-        60,
-      );
-      out.push(await processTransaction(tx, io, "demo"));
-    }
-
-    if (scenario === "card_testing") {
-      for (let i = 0; i < 5; i++) {
-        const tx = buildTx(base, samples && pick(samples.normal), 1.5);
-        out.push(await processTransaction(tx, io, "demo"));
+      switch (scenario) {
+        case "normal": {
+          const tx = buildTx(base, samples && pick(samples.normal));
+          out.push(await processTransaction(tx, io, "demo"));
+          break;
+        }
+        case "ml_fraud": {
+          if (!samples?.fraud?.length) {
+            throw httpError(
+              503,
+              "Demo samples are not installed on this server",
+            );
+          }
+          const tx = buildTx(base, pick(samples.fraud));
+          out.push(await processTransaction(tx, io, "demo"));
+          break;
+        }
+        case "blocked_country": {
+          const config = await getRuleConfig();
+          const country = config.blockedCountries?.[0];
+          if (!country) {
+            throw httpError(
+              400,
+              "No blocked countries configured. Add one in the Rules tab.",
+            );
+          }
+          const tx = buildTx(
+            { ...base, billingCountry: country },
+            samples && pick(samples.normal),
+            60,
+          );
+          out.push(await processTransaction(tx, io, "demo"));
+          break;
+        }
+        case "card_testing": {
+          for (let i = 0; i < 5; i++) {
+            const tx = buildTx(base, samples && pick(samples.normal), 1.5);
+            out.push(await processTransaction(tx, io, "demo"));
+          }
+          break;
+        }
+        default:
+          throw httpError(400, `Unknown demo scenario: ${scenario}`);
       }
-    }
 
-    res.status(201).json({ scenario, transactions: out });
+      res.status(201).json({ scenario, transactions: out });
+    } catch (err) {
+      next(err);
+    }
   };
 }

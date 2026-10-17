@@ -38,11 +38,19 @@ export function SocketProvider({ children }) {
     socket.on("disconnect", () => setConnected(false));
 
     socket.on("transaction_processed", (tx) => {
-      setTransactions((prev) => [tx, ...prev].slice(0, 100));
-    });
+      if (!tx || !tx._id) return;
 
-    socket.on("fraud_alert", (tx) => {
-      setAlerts((prev) => [tx, ...prev].slice(0, 50));
+      setTransactions((prev) => {
+        if (prev.some((t) => t._id === tx._id)) return prev;
+        return [tx, ...prev].slice(0, 100);
+      });
+
+      if (tx.status !== "APPROVED") {
+        setAlerts((prev) => {
+          if (prev.some((a) => a._id === tx._id)) return prev;
+          return [tx, ...prev].slice(0, 50);
+        });
+      }
     });
 
     return () => socket.disconnect();
