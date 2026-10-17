@@ -1,29 +1,32 @@
-import express from "express";
-import http from "http";
-import cors from "cors";
-import dotenv from "dotenv";
-
+import http from "node:http";
+import mongoose from "mongoose";
+import { env } from "./config/env.js";
+import { logger } from "./config/logger.js";
 import { connectDB } from "./config/db.js";
 import { initSocket } from "./sockets/index.js";
-import { transactionRoutes } from "./routes/transactionRoutes.js";
+import { createApp } from "./app.js";
 
-dotenv.config();
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const httpServer = http.createServer(app);
+let app;
+const httpServer = http.createServer((req, res) => app(req, res));
 const io = initSocket(httpServer);
+app = createApp(io);
 
-app.use("/api/v1/transactions", transactionRoutes(io));
+await connectDB();
 
-app.get("/health", (req, res) => res.json({ status: "ok" }));
+httpServer.listen(env.PORT, () =>
+  logger.info(`Server listening on port ${env.PORT}`),
+);
 
-const PORT = process.env.PORT || 5000;
+function shutdown(signal) {
+  logger.info({ signal }, "Shutting down");
+  io.close(() => {
+    mongoose.connection.close().finally(() => process.exit(0));
+  });
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
 
-connectDB().then(() => {
-  httpServer.listen(PORT, () =>
-    console.log(`🚀 Server running on port ${PORT}`),
-  );
-});
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("unhandledRejection", (err) =>
+  logger.error({ err }, "Unhandled rejection"),
+);

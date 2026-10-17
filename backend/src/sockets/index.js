@@ -1,14 +1,16 @@
 import { Server } from "socket.io";
+import { env } from "../config/env.js";
+import { logger } from "../config/logger.js";
 
 export function initSocket(httpServer) {
-  const io = new Server(httpServer, {
-    cors: { origin: process.env.CLIENT_URL || "*" },
-  });
+  const io = new Server(httpServer, { cors: { origin: env.CLIENT_ORIGINS } });
+
   io.on("connection", (socket) => {
-    console.log("Dashboard Connected :", socket.id);
+    logger.debug({ id: socket.id }, "Dashboard connected");
     socket.on("disconnect", () =>
-      console.log("Database disconnected:", socket.id),
+      logger.debug({ id: socket.id }, "Dashboard disconnected"),
     );
   });
+
   return io;
 }
