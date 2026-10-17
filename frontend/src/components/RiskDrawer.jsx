@@ -81,7 +81,7 @@ export default function RiskDrawer({ tx, onClose }) {
   const rules = tx.rulesTriggered || [];
   const ruleScore = Math.min(rules.length * 20, 60);
   const mlScore = (tx.mlRiskScore ?? 0) * 40;
-  const mlFallback = tx.mlRiskScore === 0.5 && tx.isAnomaly === false;
+  const mlDown = tx.mlAvailable === false;
 
   return (
     <>
@@ -155,7 +155,11 @@ export default function RiskDrawer({ tx, onClose }) {
             {tx.status}
           </span>
         </div>
-
+        {tx.decisionReason && (
+          <p style={{ fontSize: "0.85em", opacity: 0.8, marginTop: 0 }}>
+            Decision: {tx.decisionReason}
+          </p>
+        )}
         <h3 style={{ marginBottom: "8px" }}>Score contribution</h3>
         <Bar label="Rule engine" value={ruleScore} max={60} color="#3b82f6" />
         <Bar label="ML model" value={mlScore} max={40} color="#8b5cf6" />
@@ -176,10 +180,10 @@ export default function RiskDrawer({ tx, onClose }) {
         <h3 style={{ marginBottom: "8px" }}>ML model</h3>
         <Row label="Fraud probability" value={tx.mlRiskScore?.toFixed(3)} />
         <Row label="Flagged as anomaly" value={tx.isAnomaly ? "Yes" : "No"} />
-        {mlFallback && (
+        {mlDown && (
           <p style={{ fontSize: "0.8em", color: "#ca8a04" }}>
-            This is the neutral fallback score, so the ML service may have been
-            unreachable for this transaction.
+            The ML service was unreachable for this transaction, so a neutral
+            fallback score was used.
           </p>
         )}
 

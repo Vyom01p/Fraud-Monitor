@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
+import { API_URL } from "../config.js";
 
-const API_URL = "http://localhost:5000";
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {

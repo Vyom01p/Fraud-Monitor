@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_URL } from "../config.js";
 
-const STATS_URL = "http://localhost:5000/api/v1/transactions/stats";
+const STATS_URL = `${API_URL}/api/v1/transactions/stats`;
 
 export function useStats(intervalMs = 5000) {
   const [stats, setStats] = useState(null);
