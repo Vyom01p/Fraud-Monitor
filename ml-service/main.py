@@ -1,29 +1,40 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+import os
+import secrets
+
 import joblib
 import numpy as np
-import os
+from fastapi import Depends, FastAPI, Header, HTTPException
+from pydantic import BaseModel, Field
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+API_KEY = os.getenv("ML_API_KEY")
+
+
+def load(name):
+    path = os.path.join(BASE_DIR, name)
+    if not os.path.exists(path):
+        raise RuntimeError(f"{name} not found. Run `python train_model.py` first.")
+    return joblib.load(path)
+
+
+model = load("fraud_detector_xgb.joblib")
+amount_scaler = load("amount_scaler.joblib")
+time_scaler = load("time_scaler.joblib")
 
 app = FastAPI(title="Fraud Detection ML Service")
 
-FEATURE_COLS = joblib.load("feature_cols.joblib")
-SCALER = joblib.load("scaler.joblib")
 
-USE_XGB = os.path.exists("fraud_detector_xgb.joblib")
-if USE_XGB:
-    model = joblib.load("fraud_detector_xgb.joblib")
-    MODEL_TYPE = "xgboost"
-else:
-    model = joblib.load("fraud_detector_isoforest.joblib")
-    MODEL_TYPE = "isolation_forest"
-
-print(f"Loaded model type: {MODEL_TYPE}")
+def verify_key(x_api_key: str | None = Header(default=None)):
+    if API_KEY and not (x_api_key and secrets.compare_digest(x_api_key, API_KEY)):
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 class TransactionPayload(BaseModel):
     amount: float = Field(..., gt=0)
-    time: float
-    v_features: list[float] = Field(default_factory=lambda: [0.0] * 28)
+    time: float = Field(..., ge=0)
+    v_features: list[float] = Field(
+        default_factory=lambda: [0.0] * 28, min_length=28, max_length=28
+    )
 
 
 class PredictionResponse(BaseModel):
@@ -34,29 +45,18 @@ class PredictionResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_type": MODEL_TYPE}
+    return {"status": "ok", "model_type": "xgboost"}
 
 
-@app.post("/predict", response_model=PredictionResponse)
-def predict_fraud(data: TransactionPayload):
-    try:
-        amount_scaled = SCALER.transform([[data.amount]])[0][0]
-        time_scaled = SCALER.transform([[data.time]])[0][0]
-        row = data.v_features + [amount_scaled, time_scaled]
-        features = np.array([row])
+@app.post("/predict", response_model=PredictionResponse, dependencies=[Depends(verify_key)])
+def predict(data: TransactionPayload):
+    amount_scaled = amount_scaler.transform(np.array([[data.amount]]))[0][0]
+    time_scaled = time_scaler.transform(np.array([[data.time]]))[0][0]
+    row = np.array([data.v_features + [float(amount_scaled), float(time_scaled)]])
 
-        if MODEL_TYPE == "xgboost":
-            risk_score = float(model.predict_proba(features)[0][1])
-            is_anomaly = risk_score >= 0.5
-        else:
-            raw_score = model.decision_function(features)[0]
-            risk_score = float(np.clip(0.5 - raw_score, 0.0, 1.0))
-            is_anomaly = bool(model.predict(features)[0] == -1)
-
-        return PredictionResponse(
-            is_anomaly=is_anomaly,
-            risk_score=round(risk_score, 3),
-            model_type=MODEL_TYPE,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    risk_score = float(model.predict_proba(row)[0][1])
+    return PredictionResponse(
+        is_anomaly=risk_score >= 0.5,
+        risk_score=round(risk_score, 4),
+        model_type="xgboost",
+    )

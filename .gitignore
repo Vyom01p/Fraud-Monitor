@@ -1,14 +1,8 @@
-# Python
-ml-service/venv/
-ml-service/__pycache__/
 ml-service/*.joblib
-
-# Data (too large / should not be versioned)
+!ml-service/fraud_detector_xgb.joblib
+!ml-service/amount_scaler.joblib
+!ml-service/time_scaler.joblib
+!ml-service/feature_cols.joblib
 ml-service/data/
-
-# Node
-node_modules/
-*/node_modules/
-
-# Env secrets
-.env
+backend/.env
+frontend/.env
