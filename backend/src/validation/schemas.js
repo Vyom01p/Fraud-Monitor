@@ -57,3 +57,20 @@ export const ruleUpdateSchema = z
       path: ["reviewThreshold"],
     },
   );
+
+export const reviewSchema = z.object({
+  decision: z.enum(["CONFIRMED_FRAUD", "FALSE_POSITIVE"]),
+  note: z.string().trim().max(500).optional(),
+});
+
+export const listQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(500).default(25),
+  status: z.enum(["APPROVED", "REVIEW", "BLOCKED"]).optional(),
+  review: z.enum(["pending", "reviewed"]).optional(),
+  q: z.string().trim().max(64).optional(),
+});
+
+export const statsQuerySchema = z.object({
+  range: z.enum(["30m", "6h", "24h"]).default("30m"),
+});

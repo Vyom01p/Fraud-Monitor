@@ -61,3 +61,42 @@ test("unknown routes return 404", async () => {
   const res = await request(app).get("/nope");
   assert.equal(res.status, 404);
 });
+
+test("PATCH review without an admin key is unauthorized", async () => {
+  const res = await request(app)
+    .patch("/api/v1/transactions/507f1f77bcf86cd799439011/review")
+    .send({ decision: "CONFIRMED_FRAUD" });
+  assert.equal(res.status, 401);
+});
+
+test("PATCH review rejects an unknown decision", async () => {
+  const res = await request(app)
+    .patch("/api/v1/transactions/507f1f77bcf86cd799439011/review")
+    .set("x-admin-key", "test-admin-key-123")
+    .send({ decision: "MAYBE" });
+  assert.equal(res.status, 400);
+});
+
+test("PATCH review rejects a malformed id", async () => {
+  const res = await request(app)
+    .patch("/api/v1/transactions/not-an-id/review")
+    .set("x-admin-key", "test-admin-key-123")
+    .send({ decision: "FALSE_POSITIVE" });
+  assert.equal(res.status, 400);
+  assert.equal(res.body.error, "Invalid transaction id");
+});
+
+test("GET /transactions rejects an invalid status filter", async () => {
+  const res = await request(app).get("/api/v1/transactions?status=NOPE");
+  assert.equal(res.status, 400);
+});
+
+test("GET /transactions/stats rejects an invalid range", async () => {
+  const res = await request(app).get("/api/v1/transactions/stats?range=1y");
+  assert.equal(res.status, 400);
+});
+
+test("GET /transactions/export requires an admin key", async () => {
+  const res = await request(app).get("/api/v1/transactions/export");
+  assert.equal(res.status, 401);
+});

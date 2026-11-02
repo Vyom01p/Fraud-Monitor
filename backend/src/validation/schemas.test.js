@@ -1,4 +1,10 @@
-import { test } from "node:test";
+import {
+  transactionSchema,
+  ruleUpdateSchema,
+  reviewSchema,
+  listQuerySchema,
+  statsQuerySchema,
+} from "./schemas.js";
 import assert from "node:assert/strict";
 import { transactionSchema, ruleUpdateSchema } from "./schemas.js";
 
@@ -64,5 +70,43 @@ test("a partial rule update is accepted", () => {
   assert.equal(
     ruleUpdateSchema.safeParse({ velocityMaxTxPerWindow: 5 }).success,
     true,
+  );
+});
+
+test("list query applies defaults and coerces numbers", () => {
+  const r = listQuerySchema.safeParse({
+    page: "2",
+    limit: "10",
+    status: "BLOCKED",
+  });
+  assert.equal(r.success, true);
+  assert.equal(r.data.page, 2);
+  assert.equal(r.data.limit, 10);
+  assert.equal(listQuerySchema.parse({}).limit, 25);
+});
+
+test("list query rejects out-of-range limits", () => {
+  assert.equal(listQuerySchema.safeParse({ limit: "9999" }).success, false);
+});
+
+test("stats range defaults to 30m and rejects unknown values", () => {
+  assert.equal(statsQuerySchema.parse({}).range, "30m");
+  assert.equal(statsQuerySchema.safeParse({ range: "1y" }).success, false);
+});
+
+test("review schema accepts a decision with an optional note", () => {
+  assert.equal(
+    reviewSchema.safeParse({
+      decision: "FALSE_POSITIVE",
+      note: "Customer called",
+    }).success,
+    true,
+  );
+  assert.equal(
+    reviewSchema.safeParse({
+      decision: "CONFIRMED_FRAUD",
+      note: "x".repeat(501),
+    }).success,
+    false,
   );
 });

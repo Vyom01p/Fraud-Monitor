@@ -8,6 +8,7 @@ import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { transactionRoutes } from "./routes/transactionRoutes.js";
 import { ruleRoutes } from "./routes/ruleRoutes.js";
+import { getSystemStatus } from "./controllers/systemController.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp(io) {
@@ -36,6 +37,7 @@ export function createApp(io) {
       legacyHeaders: false,
     }),
   );
+  app.get("/api/v1/system", getSystemStatus);
   app.use("/api/v1/transactions", transactionRoutes(io));
   app.use("/api/v1/rules", ruleRoutes());
 

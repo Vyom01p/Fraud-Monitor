@@ -22,11 +22,18 @@ const transactionSchema = new mongoose.Schema(
       default: "APPROVED",
     },
     source: { type: String, enum: ["api", "demo"], default: "api" },
+
+    review: {
+      decision: { type: String, enum: ["CONFIRMED_FRAUD", "FALSE_POSITIVE"] },
+      note: { type: String, maxlength: 500 },
+      reviewedAt: { type: Date },
+    },
   },
   { timestamps: true },
 );
 
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ createdAt: -1 });
+transactionSchema.index({ status: 1, createdAt: -1 });
 
 export default mongoose.model("Transaction", transactionSchema);
