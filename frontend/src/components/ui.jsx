@@ -65,7 +65,7 @@ export function Chip({ children, className = "" }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-md border border-line bg-white/0.04 px-2 py-0.5 text-[11px] text-mute",
+        "inline-flex items-center rounded-md border border-line bg-white/[0.04] px-2 py-0.5 text-[11px] text-mute",
         className,
       )}
     >
@@ -117,8 +117,8 @@ export function Skeleton({ className = "" }) {
 export function EmptyState({ icon: Icon, title, hint }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-      <div className="grid size-12 place-items-center rounded-2xl border border-line bg-white/0.03 text-mute">
-        <Icon className="size-6" />
+      <div className="grid size-12 place-items-center rounded-2xl border border-line bg-white/[0.03] text-mute">
+        {Icon && <Icon className="size-6" />}
       </div>
       <p className="text-sm font-medium">{title}</p>
       {hint && <p className="max-w-xs text-xs text-mute">{hint}</p>}
@@ -128,23 +128,26 @@ export function EmptyState({ icon: Icon, title, hint }) {
 
 export function AnimatedNumber({
   value,
-  format = (n) => Math.round(n).toLocaleString("en-US"),
+  format = (n) => Math.round(Number(n) || 0).toLocaleString("en-US"),
 }) {
+  const safeVal = Number.isFinite(Number(value)) ? Number(value) : 0;
   const mv = useMotionValue(0);
-  const text = useTransform(mv, format);
+  const text = useTransform(mv, (v) =>
+    format(Number.isFinite(Number(v)) ? Number(v) : 0),
+  );
   useEffect(() => {
-    const controls = animate(mv, value ?? 0, {
+    const controls = animate(mv, safeVal, {
       duration: 0.9,
       ease: "easeOut",
     });
     return () => controls.stop();
-  }, [value, mv]);
+  }, [safeVal, mv]);
   return <motion.span>{text}</motion.span>;
 }
 
-export function Segmented({ options, value, onChange, id }) {
+export function Segmented({ options = [], value, onChange, id }) {
   return (
-    <div className="inline-flex rounded-xl border border-line bg-white/0.03 p-1">
+    <div className="inline-flex rounded-xl border border-line bg-white/[0.03] p-1">
       {options.map((o) => {
         const active = value === o.value;
         return (

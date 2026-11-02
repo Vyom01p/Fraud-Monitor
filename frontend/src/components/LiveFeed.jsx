@@ -14,12 +14,19 @@ import {
 } from "./ui.jsx";
 
 export default function LiveFeed({ limit = 10 }) {
-  const { transactions, connected, historyLoaded } = useSocket();
+  const {
+    transactions = [],
+    connected = false,
+    historyLoaded = false,
+  } = useSocket() || {};
   const { open } = useDrawer();
   const [frozen, setFrozen] = useState(null);
   useTick(15000);
 
-  const list = (frozen ?? transactions).slice(0, limit);
+  const source = Array.isArray(frozen ?? transactions)
+    ? (frozen ?? transactions)
+    : [];
+  const list = source.slice(0, limit);
 
   return (
     <Card className="overflow-hidden">
@@ -75,7 +82,8 @@ export default function LiveFeed({ limit = 10 }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-mono text-sm">{tx.userId}</p>
                   <p className="truncate text-xs text-mute">
-                    {tx.rulesTriggered?.length
+                    {Array.isArray(tx.rulesTriggered) &&
+                    tx.rulesTriggered.length
                       ? tx.rulesTriggered.map(ruleLabel).join(" · ")
                       : "No rules fired"}
                   </p>
@@ -84,7 +92,7 @@ export default function LiveFeed({ limit = 10 }) {
                   {money(tx.amount)}
                 </p>
                 <p className="hidden w-10 text-right font-mono text-sm tabular-nums text-mute sm:block">
-                  {tx.finalScore}
+                  {tx.finalScore ?? 0}
                 </p>
                 <p className="hidden w-20 text-right text-xs text-mute md:block">
                   {timeAgo(tx.createdAt)}

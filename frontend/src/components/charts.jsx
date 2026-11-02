@@ -45,19 +45,23 @@ function Tip({ active, payload, label, unit = "" }) {
   );
 }
 
-const fmtTime = (iso, range) =>
-  new Date(iso).toLocaleTimeString(
+const fmtTime = (iso, range) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString(
     [],
     range === "24h"
       ? { hour: "numeric" }
       : { hour: "2-digit", minute: "2-digit" },
   );
+};
 
 export function ActivityChart({ stats, className = "" }) {
-  const data = stats.series.map((p) => ({
-    time: fmtTime(p.time, stats.range),
-    All: p.total,
-    Flagged: p.flagged,
+  const series = Array.isArray(stats?.series) ? stats.series : [];
+  const data = series.map((p) => ({
+    time: fmtTime(p?.time, stats?.range),
+    All: Number(p?.total ?? 0),
+    Flagged: Number(p?.flagged ?? 0),
   }));
   return (
     <Card className={`p-5 ${className}`}>
@@ -126,7 +130,7 @@ export function ActivityChart({ stats, className = "" }) {
 export function DecisionDonut({ stats }) {
   const data = ["APPROVED", "REVIEW", "BLOCKED"].map((k) => ({
     name: STATUS[k].label,
-    value: stats[k.toLowerCase()],
+    value: Number(stats?.[k.toLowerCase()] ?? 0),
     fill: STATUS[k].hex,
   }));
   const empty = data.every((d) => d.value === 0);
@@ -159,7 +163,7 @@ export function DecisionDonut({ stats }) {
             <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
               <div>
                 <p className="font-mono text-2xl font-semibold tabular-nums">
-                  {num(stats.total)}
+                  {num(stats?.total)}
                 </p>
                 <p className="text-[11px] uppercase tracking-wider text-mute">
                   total
@@ -191,9 +195,10 @@ export function DecisionDonut({ stats }) {
 }
 
 export function RuleBars({ stats }) {
-  const data = stats.ruleCounts.map((r) => ({
-    name: ruleLabel(r.rule),
-    Triggers: r.count,
+  const ruleCounts = Array.isArray(stats?.ruleCounts) ? stats.ruleCounts : [];
+  const data = ruleCounts.map((r) => ({
+    name: ruleLabel(r?.rule),
+    Triggers: Number(r?.count ?? 0),
   }));
   return (
     <Card className="p-5">
@@ -235,7 +240,12 @@ const bucketColor = (from) =>
   from >= 70 ? "#fb7185" : from >= 30 ? "#fbbf24" : "#34d399";
 
 export function ScoreHistogram({ stats }) {
-  const map = new Map(stats.scoreBuckets.map((b) => [b.from, b.count]));
+  const scoreBuckets = Array.isArray(stats?.scoreBuckets)
+    ? stats.scoreBuckets
+    : [];
+  const map = new Map(
+    scoreBuckets.map((b) => [Number(b?.from ?? 0), Number(b?.count ?? 0)]),
+  );
   const data = Array.from({ length: 10 }, (_, i) => ({
     range: `${i * 10}`,
     Count: map.get(i * 10) ?? 0,

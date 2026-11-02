@@ -47,6 +47,10 @@ export default function SystemStatus() {
     };
   }, []);
 
+  const apiUp = !failed && Boolean(data?.api);
+  const dbOk = Boolean(data?.db?.ok);
+  const mlOk = Boolean(data?.ml?.ok);
+
   return (
     <Card className="p-5">
       <h2 className="text-sm font-semibold">System health</h2>
@@ -59,20 +63,22 @@ export default function SystemStatus() {
         <div className="mt-1 divide-y divide-line">
           <Row
             label="API"
-            ok={!failed}
+            ok={apiUp}
             detail={
-              failed ? "unreachable" : `up ${fmtUptime(data.api.uptimeSec)}`
+              !apiUp
+                ? "unreachable"
+                : `up ${fmtUptime(data?.api?.uptimeSec ?? 0)}`
             }
           />
           <Row
             label="Database"
-            ok={Boolean(data?.db.ok)}
-            detail={data?.db.ok ? "connected" : "down"}
+            ok={dbOk}
+            detail={dbOk ? "connected" : "down"}
           />
           <Row
             label="ML service"
-            ok={Boolean(data?.ml.ok)}
-            detail={data?.ml.ok ? `${data.ml.latencyMs} ms` : "unreachable"}
+            ok={mlOk}
+            detail={mlOk ? `${data?.ml?.latencyMs ?? 0} ms` : "unreachable"}
           />
         </div>
       )}

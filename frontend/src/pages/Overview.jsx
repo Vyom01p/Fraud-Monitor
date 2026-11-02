@@ -58,7 +58,7 @@ function Kpi({ label, icon: Icon, value, format, sub, accent, delay }) {
           </div>
         </div>
         <p className="mt-3 font-mono text-3xl font-semibold tabular-nums tracking-tight">
-          <AnimatedNumber value={value} format={format} />
+          <AnimatedNumber value={Number(value ?? 0)} format={format} />
         </p>
         <p className="mt-1 text-xs text-mute">{sub}</p>
       </motion.div>
@@ -67,8 +67,11 @@ function Kpi({ label, icon: Icon, value, format, sub, accent, delay }) {
 }
 
 function Quality({ stats }) {
-  const reviewed = stats.confirmedFraud + stats.falsePositive;
-  const precision = reviewed ? (stats.confirmedFraud / reviewed) * 100 : null;
+  const confirmedFraud = Number(stats?.confirmedFraud ?? 0);
+  const falsePositive = Number(stats?.falsePositive ?? 0);
+  const pendingReview = Number(stats?.pendingReview ?? 0);
+  const reviewed = confirmedFraud + falsePositive;
+  const precision = reviewed > 0 ? (confirmedFraud / reviewed) * 100 : null;
   return (
     <Card className="p-5">
       <h2 className="text-sm font-semibold">Detection quality</h2>
@@ -82,14 +85,14 @@ function Quality({ stats }) {
         </p>
       ) : (
         <p className="mt-3 font-mono text-4xl font-semibold tabular-nums text-gradient">
-          {precision.toFixed(0)}%
+          {Number(precision ?? 0).toFixed(0)}%
         </p>
       )}
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
         {[
-          ["Confirmed", stats.confirmedFraud, "text-bad"],
-          ["False pos.", stats.falsePositive, "text-ok"],
-          ["Pending", stats.pendingReview, "text-warn"],
+          ["Confirmed", confirmedFraud, "text-bad"],
+          ["False pos.", falsePositive, "text-ok"],
+          ["Pending", pendingReview, "text-warn"],
         ].map(([l, v, c]) => (
           <div
             key={l}
@@ -107,9 +110,9 @@ function Quality({ stats }) {
 }
 
 function RecentAlerts() {
-  const { alerts } = useSocket();
+  const { alerts = [] } = useSocket() || {};
   const { open } = useDrawer();
-  const list = alerts.filter((a) => !a.review?.decision).slice(0, 5);
+  const list = alerts.filter((a) => !a?.review?.decision).slice(0, 5);
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -138,7 +141,7 @@ function RecentAlerts() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-mono text-sm">{tx.userId}</p>
                 <p className="text-xs text-mute">
-                  {money(tx.amount)} · {timeAgo(tx.createdAt)}
+                  {money(Number(tx?.amount ?? 0))} · {timeAgo(tx.createdAt)}
                 </p>
               </div>
               <StatusPill status={tx.status} />
@@ -188,34 +191,34 @@ export default function Overview() {
               delay={0}
               label="Transactions"
               icon={Activity}
-              value={stats.total}
-              sub={`${num(stats.approved)} approved`}
+              value={Number(stats?.total ?? 0)}
+              sub={`${num(Number(stats?.approved ?? 0))} approved`}
               accent="#7c83ff"
             />
             <Kpi
               delay={0.05}
               label="Volume screened"
               icon={DollarSign}
-              value={stats.volume}
-              format={(n) => money(n)}
-              sub={`Average risk score ${stats.avgScore.toFixed(1)}`}
+              value={Number(stats?.volume ?? 0)}
+              format={(n) => money(Number(n ?? 0))}
+              sub={`Average risk score ${Number(stats?.avgScore ?? 0).toFixed(1)}`}
               accent="#38d9f5"
             />
             <Kpi
               delay={0.1}
               label="Flag rate"
               icon={Flag}
-              value={stats.flaggedRate}
-              format={(n) => `${n.toFixed(1)}%`}
-              sub={`${num(stats.review)} sent to review`}
+              value={Number(stats?.flaggedRate ?? 0)}
+              format={(n) => `${Number(n ?? 0).toFixed(1)}%`}
+              sub={`${num(Number(stats?.review ?? 0))} sent to review`}
               accent="#fbbf24"
             />
             <Kpi
               delay={0.15}
               label="Blocked"
               icon={ShieldBan}
-              value={stats.blocked}
-              sub={`${pct(stats.blockedRate)} of all traffic`}
+              value={Number(stats?.blocked ?? 0)}
+              sub={`${pct(Number(stats?.blockedRate ?? 0))} of all traffic`}
               accent="#fb7185"
             />
           </div>

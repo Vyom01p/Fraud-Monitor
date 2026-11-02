@@ -9,15 +9,24 @@ const usd0 = new Intl.NumberFormat("en-US", {
 });
 const int = new Intl.NumberFormat("en-US");
 
-export const money = (n) => ((n ?? 0) >= 10000 ? usd0 : usd).format(n ?? 0);
-export const num = (n) => int.format(n ?? 0);
-export const pct = (n, d = 1) => `${(n ?? 0).toFixed(d)}%`;
+const safeNum = (n) => {
+  const v = Number(n);
+  return Number.isFinite(v) ? v : 0;
+};
+
+export const money = (n) => {
+  const v = safeNum(n);
+  return (v >= 10000 ? usd0 : usd).format(v);
+};
+
+export const num = (n) => int.format(safeNum(n));
+
+export const pct = (n, d = 1) => `${safeNum(n).toFixed(d)}%`;
 
 export function timeAgo(date) {
-  const s = Math.max(
-    0,
-    Math.round((Date.now() - new Date(date).getTime()) / 1000),
-  );
+  const ts = new Date(date).getTime();
+  if (Number.isNaN(ts)) return "just now";
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
   if (s < 5) return "just now";
   if (s < 60) return `${s}s ago`;
   const m = Math.floor(s / 60);
@@ -28,11 +37,12 @@ export function timeAgo(date) {
 }
 
 export function fmtUptime(sec) {
-  if (sec < 60) return `${sec}s`;
-  if (sec < 3600) return `${Math.floor(sec / 60)}m`;
-  if (sec < 86400)
-    return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
-  return `${Math.floor(sec / 86400)}d`;
+  const s = safeNum(sec);
+  if (s < 60) return `${Math.floor(s)}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400)
+    return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+  return `${Math.floor(s / 86400)}d`;
 }
 
 export const RULE_LABELS = {
@@ -50,7 +60,7 @@ export const RULE_HELP = {
     "Several tiny charges in a row, typical of card testing",
 };
 
-export const ruleLabel = (r) => RULE_LABELS[r] ?? r;
+export const ruleLabel = (r) => RULE_LABELS[r] ?? r ?? "Unknown rule";
 
 export const STATUS = {
   APPROVED: {
